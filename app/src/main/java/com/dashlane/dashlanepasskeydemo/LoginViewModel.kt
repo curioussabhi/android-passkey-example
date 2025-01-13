@@ -15,8 +15,8 @@ import co.nstant.`in`.cbor.model.ByteString
 import co.nstant.`in`.cbor.model.Map
 import co.nstant.`in`.cbor.model.NegativeInteger
 import co.nstant.`in`.cbor.model.UnicodeString
-import com.dashlane.dashlanepasskeydemo.model.CreatePasskeyResponseData
-import com.dashlane.dashlanepasskeydemo.model.GetPasskeyResponseData
+import com.dashlane.dashlanepasskeydemo.model.CreatePasskeyResponse
+import com.dashlane.dashlanepasskeydemo.model.GetPasskeyResponse
 import com.dashlane.dashlanepasskeydemo.model.UserData
 import com.dashlane.dashlanepasskeydemo.repository.AccountRepository
 import com.google.gson.Gson
@@ -61,7 +61,7 @@ class LoginViewModel @Inject constructor(
                 // Account already exist, we try to get the passkey from the credential manager
                 loginWithPasskey(
                     activity,
-                    GetPublicKeyCredentialOption(accountRepository.getLoginPasskeyRequest(listOf(userData.credentialId)))
+                    listOf(userData.credentialId)
                 )
             } else {
                 _state.tryEmit(LoginState.EmailSuccess(email))
@@ -78,14 +78,17 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = UUID.randomUUID().toString()
             try {
+                val requestJson = accountRepository.getCreatePasskeyRequest(userId, email)
+                println("Create request: $requestJson")
+
                 val response = credentialManager.createCredential(
                     activity,
-                    CreatePublicKeyCredentialRequest(accountRepository.getCreatePasskeyRequest(userId, email)),
-                )
-                val responseData = gson.fromJson(
-                    (response as CreatePublicKeyCredentialResponse).registrationResponseJson,
-                    CreatePasskeyResponseData::class.java
-                )
+                    CreatePublicKeyCredentialRequest(requestJson),
+                ) as CreatePublicKeyCredentialResponse
+                val responseJson = response.registrationResponseJson
+                println("Create response: $responseJson")
+
+                val responseData = gson.fromJson(responseJson, CreatePasskeyResponse::class.java)
                 val attestationObject = CborDecoder.decode(responseData.response.attestationObject.b64Decode()).first()
                 val authData = (attestationObject as Map).get(UnicodeString("authData")) as ByteString
                 val publicKey = parseAuthData(authData.bytes)
@@ -93,6 +96,7 @@ class LoginViewModel @Inject constructor(
                 accountRepository.saveUserAccount(responseData.id, userData)
                 _state.emit(LoginState.CreateAccountSuccess)
             } catch (e: CreateCredentialException) {
+                println("Create exception: ${e.type}: ${e.message}")
                 _state.emit(LoginState.CreateAccountError(e.message ?: "Unknown error"))
                 e.printStackTrace()
             }
@@ -105,11 +109,15 @@ class LoginViewModel @Inject constructor(
      */
     fun loginWithPasskey(
         activity: Activity,
-        option: GetPublicKeyCredentialOption = GetPublicKeyCredentialOption(accountRepository.getLoginPasskeyRequest())
+        allowedList: List<String> = emptyList()
     ) {
         viewModelScope.launch {
             try {
-                val responseData = getLoginResponse(activity, option)
+                val requestJson = accountRepository.getLoginPasskeyRequest(allowedList)
+                println("Login request: $requestJson")
+                val request = GetPublicKeyCredentialOption(requestJson)
+
+                val responseData = getLoginResponse(activity, request)
                 val userData = accountRepository.getUserAccount(responseData.id)
                 if (userData == null) {
                     _state.emit(LoginState.LoginError("No account found for this user"))
@@ -121,7 +129,8 @@ class LoginViewModel @Inject constructor(
                 } else {
                     _state.emit(LoginState.LoginError("Signature verification failed"))
                 }
-            } catch (e: Exception) {
+            } catch (e: CreateCredentialException) {
+                println("Login exception: ${e.type}: ${e.message}")
                 _state.emit(LoginState.LoginError(e.message ?: "Unknown error"))
                 e.printStackTrace()
             }
@@ -134,17 +143,18 @@ class LoginViewModel @Inject constructor(
     private suspend fun getLoginResponse(
         activity: Activity,
         option: GetPublicKeyCredentialOption
-    ): GetPasskeyResponseData {
+    ): GetPasskeyResponse {
         val getCredRequest = GetCredentialRequest(listOf(option))
-        val response = credentialManager.getCredential(activity, getCredRequest)
-        val cred = response.credential as PublicKeyCredential
-        return gson.fromJson(cred.authenticationResponseJson, GetPasskeyResponseData::class.java)
+        val response = credentialManager.getCredential(activity, getCredRequest).credential as PublicKeyCredential
+        val responseJson = response.authenticationResponseJson
+        println("Login response: $responseJson")
+        return gson.fromJson(responseJson, GetPasskeyResponse::class.java)
     }
 
     /**
      * Check if the signature is valid by signing the clientDataJSON with the public key
      */
-    private fun verifySignature(responseData: GetPasskeyResponseData, publicKey: PublicKey): Boolean {
+    private fun verifySignature(responseData: GetPasskeyResponse, publicKey: PublicKey): Boolean {
         val signature = responseData.response.signature.b64Decode()
         val sig = Signature.getInstance("SHA256withECDSA")
         sig.initVerify(publicKey)

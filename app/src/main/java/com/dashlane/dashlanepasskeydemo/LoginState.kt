@@ -14,13 +14,13 @@ sealed class LoginState {
      */
     object CreateAccountSuccess : LoginState()
 
-    data class CreateAccountError(val message: String) : LoginState()
+    data class CreateAccountError(val message: String, val random: Long = System.currentTimeMillis()) : LoginState()
 
     /**
      * Login to a created account
      */
     data class LoginSuccess(val email: String, val creationDate: Long) : LoginState()
-    data class LoginError(val message: String) : LoginState()
+    data class LoginError(val message: String, val random: Long = System.currentTimeMillis()) : LoginState()
 
     object Disconnected : LoginState()
 }

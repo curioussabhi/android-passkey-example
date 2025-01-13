@@ -7,7 +7,7 @@ data class CreatePasskeyRequest(
     val pubKeyCredParams: List<PubKeyCredParams>,
     val timeout: Long,
     val attestation: String,
-    val excludeCredentials: List<Any>,
+    val excludeCredentials: List<ExcludeCredential>,
     val authenticatorSelection: AuthenticatorSelection
 ) {
     data class Rp(
@@ -31,5 +31,10 @@ data class CreatePasskeyRequest(
         val requireResidentKey: Boolean,
         val residentKey: String,
         val userVerification: String
+    )
+
+    data class ExcludeCredential(
+        val id: String,
+        val type: String
     )
 }
