@@ -19,7 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -92,9 +92,9 @@ fun LoginPage(onCreateAccount: (String) -> Unit = {}, onPasskeyLogin: () -> Unit
             }
             Spacer(modifier = Modifier.height(24.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)) {
-                Divider(modifier = Modifier.weight(1F))
+                HorizontalDivider(modifier = Modifier.weight(1F))
                 Text(text = "OR", modifier = Modifier.padding(horizontal = 8.dp))
-                Divider(modifier = Modifier.weight(1F))
+                HorizontalDivider(modifier = Modifier.weight(1F))
             }
             Spacer(modifier = Modifier.height(24.dp))
             Button(

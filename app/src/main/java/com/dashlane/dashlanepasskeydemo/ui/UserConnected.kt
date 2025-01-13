@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,10 +74,10 @@ fun UserConnected(
                     text = formattedCreationDate,
                     style = MaterialTheme.typography.bodyLarge
                 )
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                 Text(text = "Email", style = MaterialTheme.typography.titleSmall, color = SecondaryTextColor)
                 Text(text = email, style = MaterialTheme.typography.bodyLarge)
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                 Text(text = "Contribute to this application", style = MaterialTheme.typography.titleSmall, color = SecondaryTextColor)
                 Button(
                     onClick = { onSourceCodeOpen.invoke() },
